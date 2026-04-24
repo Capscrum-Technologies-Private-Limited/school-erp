@@ -1,0 +1,2545 @@
+School ERP – Complete Database Entity Design
+Data Model Reference v1.0  |  All Fixes Applied per Review
+Generated: Wed Apr 22 2026
+Summary of All Fixes & Additions
+The following flaws identified in the original DB design have been addressed:
+Issue
+Resolution
+Status
+Single parent per student
+student_parents join table (many-to-many) — replaces single field
+FIXED
+No password_hash on User
+Field renamed to password_hash (bcrypt/Argon2 ready)
+FIXED
+No status / last_login on User
+status (ACTIVE/INACTIVE/SUSPENDED) and last_login added
+FIXED
+Inline roles on User
+Removed. roles, permissions, user_roles, role_permissions created
+FIXED
+No homework tables
+homework + homework_submissions entities added
+ADDED
+No stock_movements
+Immutable stock_movements ledger added; items.current_stock maintained by service
+FIXED
+Notifications missing recipients
+notification_recipients with status, medium, sent_at, read_at added
+FIXED
+No notification templates
+notification_templates table for reusable patterns added
+ADDED
+Inconsistent audit fields
+BaseEntity applied to all 15+ entities uniformly
+FIXED
+No schools table
+schools tenant table added
+ADDED
+No academic_years
+academic_years added; classes, fees, admissions reference it
+ADDED
+No assets table
+assets entity added to Inventory module
+FIXED
+No transport vehicle/stop detail
+vehicles + route_stops tables added
+ADDED
+No library module
+books + book_issues tables added
+ADDED
+No LMS stubs
+courses, lessons, student_progress added for Phase 2
+ADDED
+No fee_categories / fee_structures
+Full fee definition pipeline added
+ADDED
+No admission_enquiries
+Pre-application lead table added
+ADDED
+No indexes on high-use columns
+Indexes added on all FK, date, status, email, phone columns
+FIXED
+Module Overview
+Module
+Entities
+Notes
+IAM
+users, roles, permissions, user_roles, role_permissions
+RBAC foundation
+SIS
+schools, academic_years, classes, subjects, class_subjects, parents, students, student_parents, teachers
+Core academic records
+Admissions
+admission_enquiries, admissions, admission_documents
+Lead to Student pipeline
+Attendance
+attendance, staff_attendance
+Daily tracking
+Homework
+homework, homework_submissions
+Assignment lifecycle + grading
+Finance
+fee_categories, fee_structures, fees, payments
+Fee definition to payment
+Inventory
+vendors, items, purchases, purchase_items, stock_movements, assets
+Stock ledger + asset register
+Transport
+vehicles, routes, route_stops, transport_assignments
+Bus route + stop management
+Library
+books, book_issues
+Borrow/return + fine tracking
+Notifications
+notification_templates, notifications, notification_recipients
+Multi-channel delivery
+LMS (Phase 2)
+courses, lessons, student_progress
+Online learning stubs
+BaseEntity Audit Mixin
+All entities extend BaseEntity. These fields appear in every table automatically via @MappedSuperclass (JPA) or a shared Prisma mixin.
+Field Name
+Type
+Nullable
+Constraints
+Notes
+created_at
+TIMESTAMP
+NO
+Set on INSERT via @PrePersist
+updated_at
+TIMESTAMP
+YES
+Set on UPDATE via @PreUpdate
+deleted_at
+TIMESTAMP
+YES
+Soft-delete timestamp
+created_by
+BIGINT
+YES
+FK → users.id
+User who created the record
+updated_by
+BIGINT
+YES
+FK → users.id
+User who last updated
+1. Identity & Access Management (IAM)
+Handles authentication, authorization, and RBAC. Every human actor has a users row. Roles and permissions are defined separately and linked via join tables.
+users
+Central identity table. Extends BaseEntity.
+Field Name
+Type
+Nullable
+Constraints
+Notes
+id
+BIGINT
+NO
+PK, AUTO_INCREMENT
+user_code
+VARCHAR(50)
+NO
+UNIQUE
+e.g. USR-0001
+email
+VARCHAR(255)
+NO
+UNIQUE, INDEX
+Login identifier
+password_hash
+VARCHAR(255)
+NO
+Bcrypt / Argon2 hash
+status
+VARCHAR(20)
+NO
+DEFAULT 'ACTIVE'
+ACTIVE | INACTIVE | SUSPENDED
+last_login
+TIMESTAMP
+YES
+Security audit field
+created_at
+TIMESTAMP
+NO
+Set on INSERT via @PrePersist
+updated_at
+TIMESTAMP
+YES
+Set on UPDATE via @PreUpdate
+deleted_at
+TIMESTAMP
+YES
+Soft-delete timestamp
+created_by
+BIGINT
+YES
+FK → users.id
+User who created the record
+updated_by
+BIGINT
+YES
+FK → users.id
+User who last updated
+roles
+Named roles: ADMIN, TEACHER, PARENT, STUDENT, ACCOUNTANT.
+Field Name
+Type
+Nullable
+Constraints
+Notes
+id
+BIGINT
+NO
+PK, AUTO_INCREMENT
+name
+VARCHAR(100)
+NO
+UNIQUE
+Role name
+description
+TEXT
+YES
+Human description
+created_at
+TIMESTAMP
+NO
+Set on INSERT via @PrePersist
+updated_at
+TIMESTAMP
+YES
+Set on UPDATE via @PreUpdate
+deleted_at
+TIMESTAMP
+YES
+Soft-delete timestamp
+created_by
+BIGINT
+YES
+FK → users.id
+User who created the record
+updated_by
+BIGINT
+YES
+FK → users.id
+User who last updated
+permissions
+Granular permission codes, e.g. fee:read, attendance:write.
+Field Name
+Type
+Nullable
+Constraints
+Notes
+id
+BIGINT
+NO
+PK, AUTO_INCREMENT
+name
+VARCHAR(150)
+NO
+UNIQUE
+e.g. student:create
+module
+VARCHAR(100)
+YES
+Grouping for UI
+created_at
+TIMESTAMP
+NO
+Set on INSERT via @PrePersist
+updated_at
+TIMESTAMP
+YES
+Set on UPDATE via @PreUpdate
+deleted_at
+TIMESTAMP
+YES
+Soft-delete timestamp
+created_by
+BIGINT
+YES
+FK → users.id
+User who created the record
+updated_by
+BIGINT
+YES
+FK → users.id
+User who last updated
+user_roles  (join)
+Many-to-many: users to roles.
+Field Name
+Type
+Nullable
+Constraints
+Notes
+user_id
+BIGINT
+NO
+PK part, FK → users.id, INDEX
+role_id
+BIGINT
+NO
+PK part, FK → roles.id
+assigned_at
+TIMESTAMP
+NO
+DEFAULT NOW()
+assigned_by
+BIGINT
+YES
+FK → users.id
+role_permissions  (join)
+Many-to-many: roles to permissions.
+Field Name
+Type
+Nullable
+Constraints
+Notes
+role_id
+BIGINT
+NO
+PK part, FK → roles.id
+permission_id
+BIGINT
+NO
+PK part, FK → permissions.id
+2. Student Information System (SIS)
+Core academic records. Students link to users (login) and classes. Parents are separate entities; student_parents join table fixes the original single-parent flaw.
+schools
+Top-level tenant table.
+Field Name
+Type
+Nullable
+Constraints
+Notes
+id
+BIGINT
+NO
+PK, AUTO_INCREMENT
+school_code
+VARCHAR(50)
+NO
+UNIQUE
+name
+VARCHAR(255)
+NO
+Display name
+address
+TEXT
+YES
+phone
+VARCHAR(20)
+YES
+email
+VARCHAR(255)
+YES
+logo_url
+VARCHAR(500)
+YES
+S3 path
+academic_year
+VARCHAR(20)
+YES
+e.g. 2024-25
+created_at
+TIMESTAMP
+NO
+Set on INSERT via @PrePersist
+updated_at
+TIMESTAMP
+YES
+Set on UPDATE via @PreUpdate
+deleted_at
+TIMESTAMP
+YES
+Soft-delete timestamp
+created_by
+BIGINT
+YES
+FK → users.id
+User who created the record
+updated_by
+BIGINT
+YES
+FK → users.id
+User who last updated
+academic_years
+Yearly academic periods; classes, fees and admissions reference this.
+Field Name
+Type
+Nullable
+Constraints
+Notes
+id
+BIGINT
+NO
+PK, AUTO_INCREMENT
+label
+VARCHAR(20)
+NO
+UNIQUE
+e.g. 2024-25
+start_date
+DATE
+NO
+end_date
+DATE
+NO
+is_active
+BOOLEAN
+NO
+DEFAULT false
+Only one active at a time
+created_at
+TIMESTAMP
+NO
+Set on INSERT via @PrePersist
+updated_at
+TIMESTAMP
+YES
+Set on UPDATE via @PreUpdate
+deleted_at
+TIMESTAMP
+YES
+Soft-delete timestamp
+created_by
+BIGINT
+YES
+FK → users.id
+User who created the record
+updated_by
+BIGINT
+YES
+FK → users.id
+User who last updated
+classes
+Grade + section. Belongs to an academic year.
+Field Name
+Type
+Nullable
+Constraints
+Notes
+id
+BIGINT
+NO
+PK, AUTO_INCREMENT
+class_code
+VARCHAR(50)
+NO
+UNIQUE
+name
+VARCHAR(100)
+NO
+e.g. Grade 5
+section
+VARCHAR(10)
+YES
+e.g. A, B
+academic_year_id
+BIGINT
+NO
+FK → academic_years.id, INDEX
+teacher_id
+BIGINT
+YES
+FK → teachers.id
+Class teacher
+created_at
+TIMESTAMP
+NO
+Set on INSERT via @PrePersist
+updated_at
+TIMESTAMP
+YES
+Set on UPDATE via @PreUpdate
+deleted_at
+TIMESTAMP
+YES
+Soft-delete timestamp
+created_by
+BIGINT
+YES
+FK → users.id
+User who created the record
+updated_by
+BIGINT
+YES
+FK → users.id
+User who last updated
+subjects
+Subject master.
+Field Name
+Type
+Nullable
+Constraints
+Notes
+id
+BIGINT
+NO
+PK, AUTO_INCREMENT
+subject_code
+VARCHAR(50)
+NO
+UNIQUE
+name
+VARCHAR(150)
+NO
+description
+TEXT
+YES
+created_at
+TIMESTAMP
+NO
+Set on INSERT via @PrePersist
+updated_at
+TIMESTAMP
+YES
+Set on UPDATE via @PreUpdate
+deleted_at
+TIMESTAMP
+YES
+Soft-delete timestamp
+created_by
+BIGINT
+YES
+FK → users.id
+User who created the record
+updated_by
+BIGINT
+YES
+FK → users.id
+User who last updated
+class_subjects  (join)
+Which subjects are taught in which class, and by which teacher.
+Field Name
+Type
+Nullable
+Constraints
+Notes
+class_id
+BIGINT
+NO
+PK part, FK → classes.id
+subject_id
+BIGINT
+NO
+PK part, FK → subjects.id
+teacher_id
+BIGINT
+YES
+FK → teachers.id
+Subject teacher
+parents
+Parent/guardian. May have a users row for portal login.
+Field Name
+Type
+Nullable
+Constraints
+Notes
+id
+BIGINT
+NO
+PK, AUTO_INCREMENT
+parent_code
+VARCHAR(50)
+NO
+UNIQUE
+user_id
+BIGINT
+YES
+FK → users.id, UNIQUE
+Portal login
+name
+VARCHAR(255)
+NO
+phone
+VARCHAR(20)
+YES
+INDEX
+email
+VARCHAR(255)
+YES
+relation
+VARCHAR(50)
+YES
+FATHER | MOTHER | GUARDIAN
+occupation
+VARCHAR(100)
+YES
+created_at
+TIMESTAMP
+NO
+Set on INSERT via @PrePersist
+updated_at
+TIMESTAMP
+YES
+Set on UPDATE via @PreUpdate
+deleted_at
+TIMESTAMP
+YES
+Soft-delete timestamp
+created_by
+BIGINT
+YES
+FK → users.id
+User who created the record
+updated_by
+BIGINT
+YES
+FK → users.id
+User who last updated
+students
+Student profile. Linked to users and classes.
+Field Name
+Type
+Nullable
+Constraints
+Notes
+id
+BIGINT
+NO
+PK, AUTO_INCREMENT
+student_code
+VARCHAR(50)
+NO
+UNIQUE
+e.g. STU-2024-001
+user_id
+BIGINT
+NO
+FK → users.id, UNIQUE
+Login account
+class_id
+BIGINT
+YES
+FK → classes.id, INDEX
+Current class
+roll_number
+VARCHAR(20)
+YES
+Within class
+first_name
+VARCHAR(100)
+NO
+last_name
+VARCHAR(100)
+NO
+date_of_birth
+DATE
+YES
+gender
+VARCHAR(10)
+YES
+MALE | FEMALE | OTHER
+blood_group
+VARCHAR(5)
+YES
+address
+TEXT
+YES
+photo_url
+VARCHAR(500)
+YES
+S3 path
+status
+VARCHAR(20)
+NO
+DEFAULT 'ACTIVE'
+ACTIVE | INACTIVE | GRADUATED
+created_at
+TIMESTAMP
+NO
+Set on INSERT via @PrePersist
+updated_at
+TIMESTAMP
+YES
+Set on UPDATE via @PreUpdate
+deleted_at
+TIMESTAMP
+YES
+Soft-delete timestamp
+created_by
+BIGINT
+YES
+FK → users.id
+User who created the record
+updated_by
+BIGINT
+YES
+FK → users.id
+User who last updated
+student_parents  (join)
+FIXED: replaces original single-parent field. Many-to-many: students to parents.
+Field Name
+Type
+Nullable
+Constraints
+Notes
+student_id
+BIGINT
+NO
+PK part, FK → students.id, INDEX
+parent_id
+BIGINT
+NO
+PK part, FK → parents.id
+is_primary
+BOOLEAN
+NO
+DEFAULT false
+Primary contact flag
+teachers
+Staff/teacher profile linked to a users row.
+Field Name
+Type
+Nullable
+Constraints
+Notes
+id
+BIGINT
+NO
+PK, AUTO_INCREMENT
+teacher_code
+VARCHAR(50)
+NO
+UNIQUE
+user_id
+BIGINT
+NO
+FK → users.id, UNIQUE
+first_name
+VARCHAR(100)
+NO
+last_name
+VARCHAR(100)
+NO
+phone
+VARCHAR(20)
+YES
+email
+VARCHAR(255)
+YES
+subject_specialization
+VARCHAR(150)
+YES
+photo_url
+VARCHAR(500)
+YES
+status
+VARCHAR(20)
+NO
+DEFAULT 'ACTIVE'
+created_at
+TIMESTAMP
+NO
+Set on INSERT via @PrePersist
+updated_at
+TIMESTAMP
+YES
+Set on UPDATE via @PreUpdate
+deleted_at
+TIMESTAMP
+YES
+Soft-delete timestamp
+created_by
+BIGINT
+YES
+FK → users.id
+User who created the record
+updated_by
+BIGINT
+YES
+FK → users.id
+User who last updated
+3. Admissions
+Manages the inquiry-to-enrollment pipeline. An enquiry becomes an application; on approval it converts into a Student record.
+admission_enquiries
+Pre-application lead capture.
+Field Name
+Type
+Nullable
+Constraints
+Notes
+id
+BIGINT
+NO
+PK, AUTO_INCREMENT
+enquiry_code
+VARCHAR(50)
+NO
+UNIQUE
+applicant_name
+VARCHAR(255)
+NO
+parent_name
+VARCHAR(255)
+YES
+phone
+VARCHAR(20)
+YES
+INDEX
+email
+VARCHAR(255)
+YES
+class_applying_for
+VARCHAR(50)
+YES
+enquiry_date
+DATE
+NO
+source
+VARCHAR(50)
+YES
+WALK_IN | ONLINE | REFERRAL
+status
+VARCHAR(30)
+NO
+DEFAULT 'NEW'
+NEW | CONTACTED | CONVERTED | DROPPED
+notes
+TEXT
+YES
+created_at
+TIMESTAMP
+NO
+Set on INSERT via @PrePersist
+updated_at
+TIMESTAMP
+YES
+Set on UPDATE via @PreUpdate
+deleted_at
+TIMESTAMP
+YES
+Soft-delete timestamp
+created_by
+BIGINT
+YES
+FK → users.id
+User who created the record
+updated_by
+BIGINT
+YES
+FK → users.id
+User who last updated
+admissions
+Formal application. student_id is null until approved and converted.
+Field Name
+Type
+Nullable
+Constraints
+Notes
+id
+BIGINT
+NO
+PK, AUTO_INCREMENT
+admission_code
+VARCHAR(50)
+NO
+UNIQUE
+enquiry_id
+BIGINT
+YES
+FK → admission_enquiries.id
+Optional back-link
+student_id
+BIGINT
+YES
+FK → students.id, INDEX
+Null until converted
+class_id
+BIGINT
+YES
+FK → classes.id
+Applying for class
+academic_year_id
+BIGINT
+NO
+FK → academic_years.id, INDEX
+applicant_name
+VARCHAR(255)
+NO
+date_of_birth
+DATE
+YES
+status
+VARCHAR(30)
+NO
+DEFAULT 'PENDING'
+PENDING | APPROVED | REJECTED | CONVERTED
+applied_at
+TIMESTAMP
+NO
+DEFAULT NOW()
+approved_at
+TIMESTAMP
+YES
+approved_by
+BIGINT
+YES
+FK → users.id
+remarks
+TEXT
+YES
+created_at
+TIMESTAMP
+NO
+Set on INSERT via @PrePersist
+updated_at
+TIMESTAMP
+YES
+Set on UPDATE via @PreUpdate
+deleted_at
+TIMESTAMP
+YES
+Soft-delete timestamp
+created_by
+BIGINT
+YES
+FK → users.id
+User who created the record
+updated_by
+BIGINT
+YES
+FK → users.id
+User who last updated
+admission_documents
+Supporting files uploaded during admission.
+Field Name
+Type
+Nullable
+Constraints
+Notes
+id
+BIGINT
+NO
+PK, AUTO_INCREMENT
+admission_id
+BIGINT
+NO
+FK → admissions.id, INDEX
+document_type
+VARCHAR(100)
+NO
+BIRTH_CERT | TRANSFER_CERT | PHOTO | ID_PROOF
+file_url
+VARCHAR(500)
+NO
+S3 path
+uploaded_at
+TIMESTAMP
+NO
+DEFAULT NOW()
+created_at
+TIMESTAMP
+NO
+Set on INSERT via @PrePersist
+updated_at
+TIMESTAMP
+YES
+Set on UPDATE via @PreUpdate
+deleted_at
+TIMESTAMP
+YES
+Soft-delete timestamp
+created_by
+BIGINT
+YES
+FK → users.id
+User who created the record
+updated_by
+BIGINT
+YES
+FK → users.id
+User who last updated
+4. Attendance
+Daily student and staff attendance. A unique constraint on (student_id, date) prevents duplicate entries.
+attendance
+Student daily attendance. Unique per student per date.
+Field Name
+Type
+Nullable
+Constraints
+Notes
+id
+BIGINT
+NO
+PK, AUTO_INCREMENT
+student_id
+BIGINT
+NO
+FK → students.id, INDEX
+class_id
+BIGINT
+NO
+FK → classes.id, INDEX
+Snapshot at time of marking
+date
+DATE
+NO
+INDEX
+status
+VARCHAR(20)
+NO
+PRESENT | ABSENT | LATE | HALF_DAY
+marked_by
+BIGINT
+YES
+FK → users.id
+Teacher who marked
+remarks
+TEXT
+YES
+UNIQUE
+(student_id, date)
+Prevent duplicates
+created_at
+TIMESTAMP
+NO
+Set on INSERT via @PrePersist
+updated_at
+TIMESTAMP
+YES
+Set on UPDATE via @PreUpdate
+deleted_at
+TIMESTAMP
+YES
+Soft-delete timestamp
+created_by
+BIGINT
+YES
+FK → users.id
+User who created the record
+updated_by
+BIGINT
+YES
+FK → users.id
+User who last updated
+staff_attendance
+Teacher / staff daily attendance.
+Field Name
+Type
+Nullable
+Constraints
+Notes
+id
+BIGINT
+NO
+PK, AUTO_INCREMENT
+user_id
+BIGINT
+NO
+FK → users.id, INDEX
+date
+DATE
+NO
+INDEX
+check_in
+TIMESTAMP
+YES
+check_out
+TIMESTAMP
+YES
+status
+VARCHAR(20)
+NO
+PRESENT | ABSENT | LEAVE
+UNIQUE
+(user_id, date)
+created_at
+TIMESTAMP
+NO
+Set on INSERT via @PrePersist
+updated_at
+TIMESTAMP
+YES
+Set on UPDATE via @PreUpdate
+deleted_at
+TIMESTAMP
+YES
+Soft-delete timestamp
+created_by
+BIGINT
+YES
+FK → users.id
+User who created the record
+updated_by
+BIGINT
+YES
+FK → users.id
+User who last updated
+5. Homework
+New module — was missing from the original design. Assignments are created by teachers per class/subject; students submit responses and teachers record marks.
+homework
+Homework assignment created by a teacher.
+Field Name
+Type
+Nullable
+Constraints
+Notes
+id
+BIGINT
+NO
+PK, AUTO_INCREMENT
+homework_code
+VARCHAR(50)
+NO
+UNIQUE
+class_id
+BIGINT
+NO
+FK → classes.id, INDEX
+subject_id
+BIGINT
+NO
+FK → subjects.id
+teacher_id
+BIGINT
+NO
+FK → teachers.id
+title
+VARCHAR(255)
+NO
+description
+TEXT
+YES
+due_date
+DATE
+NO
+INDEX
+max_marks
+DECIMAL(6,2)
+YES
+attachment_url
+VARCHAR(500)
+YES
+S3 path
+status
+VARCHAR(20)
+NO
+DEFAULT 'ACTIVE'
+ACTIVE | CANCELLED
+created_at
+TIMESTAMP
+NO
+Set on INSERT via @PrePersist
+updated_at
+TIMESTAMP
+YES
+Set on UPDATE via @PreUpdate
+deleted_at
+TIMESTAMP
+YES
+Soft-delete timestamp
+created_by
+BIGINT
+YES
+FK → users.id
+User who created the record
+updated_by
+BIGINT
+YES
+FK → users.id
+User who last updated
+homework_submissions
+Student submission per assignment. One row per (homework, student).
+Field Name
+Type
+Nullable
+Constraints
+Notes
+id
+BIGINT
+NO
+PK, AUTO_INCREMENT
+homework_id
+BIGINT
+NO
+FK → homework.id, INDEX
+student_id
+BIGINT
+NO
+FK → students.id, INDEX
+submitted_at
+TIMESTAMP
+YES
+file_url
+VARCHAR(500)
+YES
+remarks
+TEXT
+YES
+Student notes
+marks_obtained
+DECIMAL(6,2)
+YES
+Teacher-awarded marks
+graded_by
+BIGINT
+YES
+FK → users.id
+graded_at
+TIMESTAMP
+YES
+status
+VARCHAR(20)
+NO
+DEFAULT 'PENDING'
+PENDING | SUBMITTED | GRADED
+UNIQUE
+(homework_id, student_id)
+One submission per student
+created_at
+TIMESTAMP
+NO
+Set on INSERT via @PrePersist
+updated_at
+TIMESTAMP
+YES
+Set on UPDATE via @PreUpdate
+deleted_at
+TIMESTAMP
+YES
+Soft-delete timestamp
+created_by
+BIGINT
+YES
+FK → users.id
+User who created the record
+updated_by
+BIGINT
+YES
+FK → users.id
+User who last updated
+6. Finance & Fee Management
+Fee structures are defined per class/academic year. Individual fee invoices are generated per student. Payments are recorded against invoices.
+fee_categories
+Master list of fee types: Tuition, Transport, Library, Lab, etc.
+Field Name
+Type
+Nullable
+Constraints
+Notes
+id
+BIGINT
+NO
+PK, AUTO_INCREMENT
+name
+VARCHAR(100)
+NO
+UNIQUE
+description
+TEXT
+YES
+created_at
+TIMESTAMP
+NO
+Set on INSERT via @PrePersist
+updated_at
+TIMESTAMP
+YES
+Set on UPDATE via @PreUpdate
+deleted_at
+TIMESTAMP
+YES
+Soft-delete timestamp
+created_by
+BIGINT
+YES
+FK → users.id
+User who created the record
+updated_by
+BIGINT
+YES
+FK → users.id
+User who last updated
+fee_structures
+Defines amount per category per class per academic year.
+Field Name
+Type
+Nullable
+Constraints
+Notes
+id
+BIGINT
+NO
+PK, AUTO_INCREMENT
+academic_year_id
+BIGINT
+NO
+FK → academic_years.id, INDEX
+class_id
+BIGINT
+YES
+FK → classes.id, INDEX
+Null = school-wide
+fee_category_id
+BIGINT
+NO
+FK → fee_categories.id
+amount
+DECIMAL(12,2)
+NO
+frequency
+VARCHAR(20)
+NO
+ANNUAL | TERM | MONTHLY
+due_day
+INT
+YES
+Day of month due
+created_at
+TIMESTAMP
+NO
+Set on INSERT via @PrePersist
+updated_at
+TIMESTAMP
+YES
+Set on UPDATE via @PreUpdate
+deleted_at
+TIMESTAMP
+YES
+Soft-delete timestamp
+created_by
+BIGINT
+YES
+FK → users.id
+User who created the record
+updated_by
+BIGINT
+YES
+FK → users.id
+User who last updated
+fees
+Individual fee invoice per student, generated from fee_structures.
+Field Name
+Type
+Nullable
+Constraints
+Notes
+id
+BIGINT
+NO
+PK, AUTO_INCREMENT
+fee_code
+VARCHAR(50)
+NO
+UNIQUE
+student_id
+BIGINT
+NO
+FK → students.id, INDEX
+fee_category_id
+BIGINT
+NO
+FK → fee_categories.id
+academic_year_id
+BIGINT
+NO
+FK → academic_years.id
+total_amount
+DECIMAL(12,2)
+NO
+discount_amount
+DECIMAL(12,2)
+YES
+DEFAULT 0
+Scholarship / waiver
+net_amount
+DECIMAL(12,2)
+NO
+total minus discount
+due_date
+DATE
+NO
+INDEX
+status
+VARCHAR(20)
+NO
+DEFAULT 'PENDING'
+PENDING | PARTIAL | PAID | OVERDUE | WAIVED
+created_at
+TIMESTAMP
+NO
+Set on INSERT via @PrePersist
+updated_at
+TIMESTAMP
+YES
+Set on UPDATE via @PreUpdate
+deleted_at
+TIMESTAMP
+YES
+Soft-delete timestamp
+created_by
+BIGINT
+YES
+FK → users.id
+User who created the record
+updated_by
+BIGINT
+YES
+FK → users.id
+User who last updated
+payments
+Payment transaction recorded against a fee invoice.
+Field Name
+Type
+Nullable
+Constraints
+Notes
+id
+BIGINT
+NO
+PK, AUTO_INCREMENT
+payment_code
+VARCHAR(50)
+NO
+UNIQUE
+Receipt number
+fee_id
+BIGINT
+NO
+FK → fees.id, INDEX
+amount
+DECIMAL(12,2)
+NO
+method
+VARCHAR(30)
+NO
+CASH | CHEQUE | UPI | NEFT | CARD | ONLINE
+transaction_ref
+VARCHAR(150)
+YES
+Bank ref / UTR
+paid_at
+TIMESTAMP
+NO
+INDEX
+collected_by
+BIGINT
+YES
+FK → users.id
+Staff who collected
+remarks
+TEXT
+YES
+created_at
+TIMESTAMP
+NO
+Set on INSERT via @PrePersist
+updated_at
+TIMESTAMP
+YES
+Set on UPDATE via @PreUpdate
+deleted_at
+TIMESTAMP
+YES
+Soft-delete timestamp
+created_by
+BIGINT
+YES
+FK → users.id
+User who created the record
+updated_by
+BIGINT
+YES
+FK → users.id
+User who last updated
+7. Inventory & Asset Management
+Item master + stock movements ledger. Vendors supply goods via purchase orders. Assets (computers, projectors, furniture) are tracked separately. stock_movements is an immutable append-only ledger.
+vendors
+Supplier / vendor master.
+Field Name
+Type
+Nullable
+Constraints
+Notes
+id
+BIGINT
+NO
+PK, AUTO_INCREMENT
+vendor_code
+VARCHAR(50)
+NO
+UNIQUE
+name
+VARCHAR(255)
+NO
+contact_person
+VARCHAR(150)
+YES
+phone
+VARCHAR(20)
+YES
+email
+VARCHAR(255)
+YES
+address
+TEXT
+YES
+gstin
+VARCHAR(20)
+YES
+Tax ID
+status
+VARCHAR(20)
+NO
+DEFAULT 'ACTIVE'
+created_at
+TIMESTAMP
+NO
+Set on INSERT via @PrePersist
+updated_at
+TIMESTAMP
+YES
+Set on UPDATE via @PreUpdate
+deleted_at
+TIMESTAMP
+YES
+Soft-delete timestamp
+created_by
+BIGINT
+YES
+FK → users.id
+User who created the record
+updated_by
+BIGINT
+YES
+FK → users.id
+User who last updated
+items
+Consumable item master (stationery, lab materials, etc.).
+Field Name
+Type
+Nullable
+Constraints
+Notes
+id
+BIGINT
+NO
+PK, AUTO_INCREMENT
+item_code
+VARCHAR(50)
+NO
+UNIQUE
+name
+VARCHAR(255)
+NO
+unit
+VARCHAR(20)
+YES
+PCS | BOX | KG | LITRE
+reorder_level
+INT
+YES
+Alert when stock is at or below this
+current_stock
+INT
+NO
+DEFAULT 0
+Maintained by service layer
+category
+VARCHAR(100)
+YES
+Stationery | Lab | Sports
+created_at
+TIMESTAMP
+NO
+Set on INSERT via @PrePersist
+updated_at
+TIMESTAMP
+YES
+Set on UPDATE via @PreUpdate
+deleted_at
+TIMESTAMP
+YES
+Soft-delete timestamp
+created_by
+BIGINT
+YES
+FK → users.id
+User who created the record
+updated_by
+BIGINT
+YES
+FK → users.id
+User who last updated
+purchases
+Purchase order from a vendor.
+Field Name
+Type
+Nullable
+Constraints
+Notes
+id
+BIGINT
+NO
+PK, AUTO_INCREMENT
+purchase_code
+VARCHAR(50)
+NO
+UNIQUE
+vendor_id
+BIGINT
+NO
+FK → vendors.id, INDEX
+purchase_date
+DATE
+NO
+total_amount
+DECIMAL(12,2)
+YES
+invoice_number
+VARCHAR(100)
+YES
+Vendor invoice ref
+status
+VARCHAR(20)
+NO
+DEFAULT 'PENDING'
+PENDING | RECEIVED | PARTIAL
+created_at
+TIMESTAMP
+NO
+Set on INSERT via @PrePersist
+updated_at
+TIMESTAMP
+YES
+Set on UPDATE via @PreUpdate
+deleted_at
+TIMESTAMP
+YES
+Soft-delete timestamp
+created_by
+BIGINT
+YES
+FK → users.id
+User who created the record
+updated_by
+BIGINT
+YES
+FK → users.id
+User who last updated
+purchase_items
+Line items within a purchase order.
+Field Name
+Type
+Nullable
+Constraints
+Notes
+id
+BIGINT
+NO
+PK, AUTO_INCREMENT
+purchase_id
+BIGINT
+NO
+FK → purchases.id, INDEX
+item_id
+BIGINT
+NO
+FK → items.id
+quantity
+INT
+NO
+unit_price
+DECIMAL(10,2)
+NO
+received_qty
+INT
+YES
+DEFAULT 0
+Partial delivery tracking
+created_at
+TIMESTAMP
+NO
+Set on INSERT via @PrePersist
+updated_at
+TIMESTAMP
+YES
+Set on UPDATE via @PreUpdate
+deleted_at
+TIMESTAMP
+YES
+Soft-delete timestamp
+created_by
+BIGINT
+YES
+FK → users.id
+User who created the record
+updated_by
+BIGINT
+YES
+FK → users.id
+User who last updated
+stock_movements
+Immutable ledger of every IN / OUT event. Never update or delete rows.
+Field Name
+Type
+Nullable
+Constraints
+Notes
+id
+BIGINT
+NO
+PK, AUTO_INCREMENT
+item_id
+BIGINT
+NO
+FK → items.id, INDEX
+movement_type
+VARCHAR(10)
+NO
+IN | OUT
+quantity
+INT
+NO
+Always positive
+reference_type
+VARCHAR(50)
+YES
+PURCHASE | ISSUE | DAMAGE | RETURN
+reference_id
+BIGINT
+YES
+FK to source record
+remarks
+TEXT
+YES
+moved_by
+BIGINT
+YES
+FK → users.id
+moved_at
+TIMESTAMP
+NO
+DEFAULT NOW()
+INDEX
+created_at
+TIMESTAMP
+NO
+Set on INSERT via @PrePersist
+updated_at
+TIMESTAMP
+YES
+Set on UPDATE via @PreUpdate
+deleted_at
+TIMESTAMP
+YES
+Soft-delete timestamp
+created_by
+BIGINT
+YES
+FK → users.id
+User who created the record
+updated_by
+BIGINT
+YES
+FK → users.id
+User who last updated
+assets
+Long-lived assets: computers, projectors, furniture, vehicles.
+Field Name
+Type
+Nullable
+Constraints
+Notes
+id
+BIGINT
+NO
+PK, AUTO_INCREMENT
+asset_code
+VARCHAR(50)
+NO
+UNIQUE
+name
+VARCHAR(255)
+NO
+category
+VARCHAR(100)
+YES
+IT | FURNITURE | VEHICLE | AV
+serial_number
+VARCHAR(100)
+YES
+UNIQUE
+purchase_date
+DATE
+YES
+purchase_value
+DECIMAL(12,2)
+YES
+current_location
+VARCHAR(150)
+YES
+Room / department
+status
+VARCHAR(30)
+NO
+DEFAULT 'ACTIVE'
+ACTIVE | MAINTENANCE | DISPOSED
+vendor_id
+BIGINT
+YES
+FK → vendors.id
+created_at
+TIMESTAMP
+NO
+Set on INSERT via @PrePersist
+updated_at
+TIMESTAMP
+YES
+Set on UPDATE via @PreUpdate
+deleted_at
+TIMESTAMP
+YES
+Soft-delete timestamp
+created_by
+BIGINT
+YES
+FK → users.id
+User who created the record
+updated_by
+BIGINT
+YES
+FK → users.id
+User who last updated
+8. Transport Management
+Bus routes, vehicles, stop sequences, and student pickup assignments. GPS log tables can be added in Phase 2.
+vehicles
+School bus / van fleet.
+Field Name
+Type
+Nullable
+Constraints
+Notes
+id
+BIGINT
+NO
+PK, AUTO_INCREMENT
+vehicle_code
+VARCHAR(50)
+NO
+UNIQUE
+registration_number
+VARCHAR(30)
+NO
+UNIQUE
+model
+VARCHAR(100)
+YES
+capacity
+INT
+YES
+Passenger seats
+driver_name
+VARCHAR(150)
+YES
+driver_phone
+VARCHAR(20)
+YES
+status
+VARCHAR(20)
+NO
+DEFAULT 'ACTIVE'
+ACTIVE | MAINTENANCE | RETIRED
+created_at
+TIMESTAMP
+NO
+Set on INSERT via @PrePersist
+updated_at
+TIMESTAMP
+YES
+Set on UPDATE via @PreUpdate
+deleted_at
+TIMESTAMP
+YES
+Soft-delete timestamp
+created_by
+BIGINT
+YES
+FK → users.id
+User who created the record
+updated_by
+BIGINT
+YES
+FK → users.id
+User who last updated
+routes
+Named bus routes.
+Field Name
+Type
+Nullable
+Constraints
+Notes
+id
+BIGINT
+NO
+PK, AUTO_INCREMENT
+route_code
+VARCHAR(50)
+NO
+UNIQUE
+name
+VARCHAR(150)
+NO
+start_point
+VARCHAR(150)
+YES
+end_point
+VARCHAR(150)
+YES
+vehicle_id
+BIGINT
+YES
+FK → vehicles.id
+Assigned bus
+monthly_fee
+DECIMAL(10,2)
+YES
+Transport fee amount
+created_at
+TIMESTAMP
+NO
+Set on INSERT via @PrePersist
+updated_at
+TIMESTAMP
+YES
+Set on UPDATE via @PreUpdate
+deleted_at
+TIMESTAMP
+YES
+Soft-delete timestamp
+created_by
+BIGINT
+YES
+FK → users.id
+User who created the record
+updated_by
+BIGINT
+YES
+FK → users.id
+User who last updated
+route_stops
+Ordered pickup / drop-off stops on a route.
+Field Name
+Type
+Nullable
+Constraints
+Notes
+id
+BIGINT
+NO
+PK, AUTO_INCREMENT
+route_id
+BIGINT
+NO
+FK → routes.id, INDEX
+stop_name
+VARCHAR(150)
+NO
+stop_order
+INT
+NO
+Sequence on route
+pickup_time
+TIME
+YES
+Morning pickup
+drop_time
+TIME
+YES
+Afternoon drop
+created_at
+TIMESTAMP
+NO
+Set on INSERT via @PrePersist
+updated_at
+TIMESTAMP
+YES
+Set on UPDATE via @PreUpdate
+deleted_at
+TIMESTAMP
+YES
+Soft-delete timestamp
+created_by
+BIGINT
+YES
+FK → users.id
+User who created the record
+updated_by
+BIGINT
+YES
+FK → users.id
+User who last updated
+transport_assignments
+Links a student to a specific route and stop.
+Field Name
+Type
+Nullable
+Constraints
+Notes
+id
+BIGINT
+NO
+PK, AUTO_INCREMENT
+student_id
+BIGINT
+NO
+FK → students.id, INDEX
+route_id
+BIGINT
+NO
+FK → routes.id
+stop_id
+BIGINT
+YES
+FK → route_stops.id
+academic_year_id
+BIGINT
+NO
+FK → academic_years.id
+status
+VARCHAR(20)
+NO
+DEFAULT 'ACTIVE'
+created_at
+TIMESTAMP
+NO
+Set on INSERT via @PrePersist
+updated_at
+TIMESTAMP
+YES
+Set on UPDATE via @PreUpdate
+deleted_at
+TIMESTAMP
+YES
+Soft-delete timestamp
+created_by
+BIGINT
+YES
+FK → users.id
+User who created the record
+updated_by
+BIGINT
+YES
+FK → users.id
+User who last updated
+9. Library Management
+Book catalogue, physical copy counts, and issue/return tracking. Fines are calculated on return for overdue books.
+books
+Book title catalogue (bibliographic record).
+Field Name
+Type
+Nullable
+Constraints
+Notes
+id
+BIGINT
+NO
+PK, AUTO_INCREMENT
+book_code
+VARCHAR(50)
+NO
+UNIQUE
+isbn
+VARCHAR(20)
+YES
+UNIQUE
+title
+VARCHAR(255)
+NO
+author
+VARCHAR(255)
+YES
+publisher
+VARCHAR(150)
+YES
+category
+VARCHAR(100)
+YES
+total_copies
+INT
+NO
+DEFAULT 0
+available_copies
+INT
+NO
+DEFAULT 0
+created_at
+TIMESTAMP
+NO
+Set on INSERT via @PrePersist
+updated_at
+TIMESTAMP
+YES
+Set on UPDATE via @PreUpdate
+deleted_at
+TIMESTAMP
+YES
+Soft-delete timestamp
+created_by
+BIGINT
+YES
+FK → users.id
+User who created the record
+updated_by
+BIGINT
+YES
+FK → users.id
+User who last updated
+book_issues
+Issue record per borrower. returned_at null means still on loan.
+Field Name
+Type
+Nullable
+Constraints
+Notes
+id
+BIGINT
+NO
+PK, AUTO_INCREMENT
+book_id
+BIGINT
+NO
+FK → books.id, INDEX
+user_id
+BIGINT
+NO
+FK → users.id, INDEX
+Borrower
+issued_at
+TIMESTAMP
+NO
+DEFAULT NOW()
+due_date
+DATE
+NO
+returned_at
+TIMESTAMP
+YES
+Null = not yet returned
+fine_amount
+DECIMAL(8,2)
+YES
+DEFAULT 0
+Calculated on return
+fine_paid
+BOOLEAN
+YES
+DEFAULT false
+status
+VARCHAR(20)
+NO
+DEFAULT 'ISSUED'
+ISSUED | RETURNED | OVERDUE | LOST
+created_at
+TIMESTAMP
+NO
+Set on INSERT via @PrePersist
+updated_at
+TIMESTAMP
+YES
+Set on UPDATE via @PreUpdate
+deleted_at
+TIMESTAMP
+YES
+Soft-delete timestamp
+created_by
+BIGINT
+YES
+FK → users.id
+User who created the record
+updated_by
+BIGINT
+YES
+FK → users.id
+User who last updated
+10. Notifications
+Templates define reusable message patterns. Notifications are event instances. notification_recipients tracks per-user delivery status across channels (SMS, EMAIL, APP).
+notification_templates
+Reusable message templates with variable placeholders.
+Field Name
+Type
+Nullable
+Constraints
+Notes
+id
+BIGINT
+NO
+PK, AUTO_INCREMENT
+code
+VARCHAR(100)
+NO
+UNIQUE
+e.g. FEE_DUE_REMINDER
+title_template
+VARCHAR(255)
+NO
+Supports {{student_name}} etc.
+body_template
+TEXT
+NO
+medium
+VARCHAR(20)
+NO
+SMS | EMAIL | APP | ALL
+is_active
+BOOLEAN
+NO
+DEFAULT true
+created_at
+TIMESTAMP
+NO
+Set on INSERT via @PrePersist
+updated_at
+TIMESTAMP
+YES
+Set on UPDATE via @PreUpdate
+deleted_at
+TIMESTAMP
+YES
+Soft-delete timestamp
+created_by
+BIGINT
+YES
+FK → users.id
+User who created the record
+updated_by
+BIGINT
+YES
+FK → users.id
+User who last updated
+notifications
+Individual notification event, resolved from a template.
+Field Name
+Type
+Nullable
+Constraints
+Notes
+id
+BIGINT
+NO
+PK, AUTO_INCREMENT
+template_id
+BIGINT
+YES
+FK → notification_templates.id
+title
+VARCHAR(255)
+NO
+Resolved title
+message
+TEXT
+NO
+Resolved body
+type
+VARCHAR(50)
+NO
+FEE | ATTENDANCE | ADMISSION | GENERAL
+triggered_by
+BIGINT
+YES
+FK → users.id
+created_at
+TIMESTAMP
+NO
+DEFAULT NOW()
+created_at
+TIMESTAMP
+NO
+Set on INSERT via @PrePersist
+updated_at
+TIMESTAMP
+YES
+Set on UPDATE via @PreUpdate
+deleted_at
+TIMESTAMP
+YES
+Soft-delete timestamp
+created_by
+BIGINT
+YES
+FK → users.id
+User who created the record
+updated_by
+BIGINT
+YES
+FK → users.id
+User who last updated
+notification_recipients
+FIXED: per-user delivery tracking. One row per notification x user x medium.
+Field Name
+Type
+Nullable
+Constraints
+Notes
+id
+BIGINT
+NO
+PK, AUTO_INCREMENT
+notification_id
+BIGINT
+NO
+FK → notifications.id, INDEX
+user_id
+BIGINT
+NO
+FK → users.id, INDEX
+medium
+VARCHAR(20)
+NO
+SMS | EMAIL | APP
+status
+VARCHAR(20)
+NO
+DEFAULT 'PENDING'
+PENDING | SENT | DELIVERED | READ | FAILED
+sent_at
+TIMESTAMP
+YES
+read_at
+TIMESTAMP
+YES
+failure_reason
+TEXT
+YES
+For FAILED status
+created_at
+TIMESTAMP
+NO
+Set on INSERT via @PrePersist
+updated_at
+TIMESTAMP
+YES
+Set on UPDATE via @PreUpdate
+deleted_at
+TIMESTAMP
+YES
+Soft-delete timestamp
+created_by
+BIGINT
+YES
+FK → users.id
+User who created the record
+updated_by
+BIGINT
+YES
+FK → users.id
+User who last updated
+11. LMS – Learning Management System (Phase 2 Stubs)
+Defined now to ensure data model compatibility. Course catalogue, lessons, student enrolments, and progress tracking are the core tables.
+courses
+A course maps to a subject + class for a given academic year.
+Field Name
+Type
+Nullable
+Constraints
+Notes
+id
+BIGINT
+NO
+PK, AUTO_INCREMENT
+course_code
+VARCHAR(50)
+NO
+UNIQUE
+title
+VARCHAR(255)
+NO
+subject_id
+BIGINT
+NO
+FK → subjects.id
+class_id
+BIGINT
+YES
+FK → classes.id
+teacher_id
+BIGINT
+YES
+FK → teachers.id
+academic_year_id
+BIGINT
+NO
+FK → academic_years.id
+status
+VARCHAR(20)
+NO
+DEFAULT 'DRAFT'
+DRAFT | PUBLISHED | ARCHIVED
+created_at
+TIMESTAMP
+NO
+Set on INSERT via @PrePersist
+updated_at
+TIMESTAMP
+YES
+Set on UPDATE via @PreUpdate
+deleted_at
+TIMESTAMP
+YES
+Soft-delete timestamp
+created_by
+BIGINT
+YES
+FK → users.id
+User who created the record
+updated_by
+BIGINT
+YES
+FK → users.id
+User who last updated
+lessons
+Individual lesson within a course.
+Field Name
+Type
+Nullable
+Constraints
+Notes
+id
+BIGINT
+NO
+PK, AUTO_INCREMENT
+course_id
+BIGINT
+NO
+FK → courses.id, INDEX
+title
+VARCHAR(255)
+NO
+content_type
+VARCHAR(20)
+YES
+VIDEO | PDF | TEXT | QUIZ
+content_url
+VARCHAR(500)
+YES
+S3 path
+sequence_order
+INT
+NO
+duration_minutes
+INT
+YES
+created_at
+TIMESTAMP
+NO
+Set on INSERT via @PrePersist
+updated_at
+TIMESTAMP
+YES
+Set on UPDATE via @PreUpdate
+deleted_at
+TIMESTAMP
+YES
+Soft-delete timestamp
+created_by
+BIGINT
+YES
+FK → users.id
+User who created the record
+updated_by
+BIGINT
+YES
+FK → users.id
+User who last updated
+student_progress
+Lesson completion tracking per student.
+Field Name
+Type
+Nullable
+Constraints
+Notes
+id
+BIGINT
+NO
+PK, AUTO_INCREMENT
+student_id
+BIGINT
+NO
+FK → students.id, INDEX
+lesson_id
+BIGINT
+NO
+FK → lessons.id, INDEX
+status
+VARCHAR(20)
+NO
+DEFAULT 'NOT_STARTED'
+NOT_STARTED | IN_PROGRESS | COMPLETED
+completed_at
+TIMESTAMP
+YES
+score
+DECIMAL(5,2)
+YES
+Quiz type only
+UNIQUE
+(student_id, lesson_id)
+One record per student per lesson
+created_at
+TIMESTAMP
+NO
+Set on INSERT via @PrePersist
+updated_at
+TIMESTAMP
+YES
+Set on UPDATE via @PreUpdate
+deleted_at
+TIMESTAMP
+YES
+Soft-delete timestamp
+created_by
+BIGINT
+YES
+FK → users.id
+User who created the record
+updated_by
+BIGINT
+YES
+FK → users.id
+User who last updated
+Index Strategy
+All high-use columns have explicit database indexes. FK columns are indexed by default; the list below highlights additional performance-critical indexes.
+Table
+Indexed Columns
+Reason
+users
+email, status
+Login lookup, active user filter
+students
+class_id, status, student_code
+Class roster, active students
+parents
+phone
+Parent search by phone
+attendance
+student_id, date, class_id
+Daily roll call and reports
+fees
+student_id, due_date, status
+Pending fee queries
+payments
+fee_id, paid_at
+Payment history
+stock_movements
+item_id, moved_at
+Stock balance calculation
+notification_recipients
+user_id, notification_id, status
+Inbox / unread count
+homework
+class_id, due_date
+Teacher and student task list
+homework_submissions
+homework_id, student_id
+Submission lookup
+admissions
+student_id, status, academic_year_id
+Admission pipeline reports
+book_issues
+user_id, status
+Active loans per user
