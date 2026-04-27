@@ -16,8 +16,8 @@ import lombok.Setter;
 @Setter
 @Entity
 @EqualsAndHashCode(callSuper = false)
-@Table(name = "classes")
-public class SchoolClass extends BaseEntity {
+@Table(name = "fee_categories")
+public class FeeCategory extends BaseEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
@@ -27,24 +27,8 @@ public class SchoolClass extends BaseEntity {
     @JoinColumn(name = "school_id", nullable = false)
     private School school;
 
-    @ManyToOne
-    @JoinColumn(name = "academic_year_id", nullable = false)
-    private AcademicYear academicYear;
-
     @Column(unique = true, nullable = false)
-    private String classCode; // e.g. "10-A-2024"
+    private String name;
 
-    @Column(nullable = false)
-    private String grade;
-
-    @Column(nullable = false)
-    private String section;
-
-    private String roomNumber;
-
-    private Integer capacity;
-
-    @ManyToOne
-    @JoinColumn(name = "teacher_id")
-    private Teacher classTeacher;
+    private String description;
 }

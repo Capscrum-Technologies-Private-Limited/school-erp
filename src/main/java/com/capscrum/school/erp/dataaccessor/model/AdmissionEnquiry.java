@@ -12,12 +12,14 @@ import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.Setter;
 
+import java.time.LocalDate;
+
 @Getter
 @Setter
 @Entity
 @EqualsAndHashCode(callSuper = false)
-@Table(name = "classes")
-public class SchoolClass extends BaseEntity {
+@Table(name = "admission_enquiries")
+public class AdmissionEnquiry extends BaseEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
@@ -27,24 +29,29 @@ public class SchoolClass extends BaseEntity {
     @JoinColumn(name = "school_id", nullable = false)
     private School school;
 
-    @ManyToOne
-    @JoinColumn(name = "academic_year_id", nullable = false)
-    private AcademicYear academicYear;
-
     @Column(unique = true, nullable = false)
-    private String classCode; // e.g. "10-A-2024"
+    private String enquiryCode;
 
     @Column(nullable = false)
-    private String grade;
+    private String applicantName;
+
+    private String parentName;
 
     @Column(nullable = false)
-    private String section;
+    private String phone;
 
-    private String roomNumber;
+    private String email;
 
-    private Integer capacity;
+    private String classApplyingFor;
 
-    @ManyToOne
-    @JoinColumn(name = "teacher_id")
-    private Teacher classTeacher;
+    @Column(nullable = false)
+    private LocalDate enquiryDate = LocalDate.now();
+
+    private String source; // WALK_IN, ONLINE, REFERRAL
+
+    @Column(nullable = false)
+    private String status = "NEW"; // NEW, CONTACTED, CONVERTED, DROPPED
+
+    @Column(columnDefinition = "TEXT")
+    private String notes;
 }

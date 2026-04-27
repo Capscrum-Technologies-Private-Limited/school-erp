@@ -34,6 +34,10 @@ public class Fee extends BaseEntity {
     @JoinColumn(name = "fee_structure_id", nullable = false)
     private FeeStructure feeStructure;
 
+    @ManyToOne
+    @JoinColumn(name = "fee_category_id", nullable = false)
+    private FeeCategory feeCategory;
+
     @Column(nullable = false, precision = 10, scale = 2)
     private BigDecimal amount;
 

@@ -12,39 +12,29 @@ import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.Setter;
 
+import java.time.LocalDateTime;
+
 @Getter
 @Setter
 @Entity
 @EqualsAndHashCode(callSuper = false)
-@Table(name = "classes")
-public class SchoolClass extends BaseEntity {
+@Table(name = "admission_documents")
+public class AdmissionDocument extends BaseEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
     private String id;
 
     @ManyToOne
-    @JoinColumn(name = "school_id", nullable = false)
-    private School school;
-
-    @ManyToOne
-    @JoinColumn(name = "academic_year_id", nullable = false)
-    private AcademicYear academicYear;
-
-    @Column(unique = true, nullable = false)
-    private String classCode; // e.g. "10-A-2024"
+    @JoinColumn(name = "admission_id", nullable = false)
+    private Admission admission;
 
     @Column(nullable = false)
-    private String grade;
+    private String documentType; // BIRTH_CERT, TRANSFER_CERT, PHOTO, ID_PROOF
 
     @Column(nullable = false)
-    private String section;
+    private String fileUrl;
 
-    private String roomNumber;
-
-    private Integer capacity;
-
-    @ManyToOne
-    @JoinColumn(name = "teacher_id")
-    private Teacher classTeacher;
+    @Column(nullable = false)
+    private LocalDateTime uploadedAt = LocalDateTime.now();
 }

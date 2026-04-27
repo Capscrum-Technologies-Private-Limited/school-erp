@@ -36,8 +36,9 @@ public class FeeStructure extends BaseEntity {
     @Column(nullable = false)
     private String name; // e.g. "Tuition Fee", "Lab Fee", "Transport Fee"
 
-    @Column(nullable = false)
-    private String feeCategory; // TUITION, LAB, TRANSPORT, EXAM, LIBRARY, OTHER
+    @ManyToOne
+    @JoinColumn(name = "fee_category_id", nullable = false)
+    private FeeCategory feeCategory;
 
     @Column(nullable = false, precision = 10, scale = 2)
     private BigDecimal amount;

@@ -27,6 +27,10 @@ public class Notification extends BaseEntity {
     @JoinColumn(name = "school_id", nullable = false)
     private School school;
 
+    @ManyToOne
+    @JoinColumn(name = "template_id")
+    private NotificationTemplate template;
+
     @Column(nullable = false)
     private String type; // ADMISSION_APPROVED, ADMISSION_REJECTED, FEE_PAYMENT_CONFIRMATION, FEE_REMINDER
 

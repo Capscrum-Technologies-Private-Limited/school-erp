@@ -6,7 +6,7 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
-import jakarta.persistence.ManyToOne;
+import jakarta.persistence.OneToOne;
 import jakarta.persistence.Table;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
@@ -16,35 +16,34 @@ import lombok.Setter;
 @Setter
 @Entity
 @EqualsAndHashCode(callSuper = false)
-@Table(name = "classes")
-public class SchoolClass extends BaseEntity {
+@Table(name = "teachers")
+public class Teacher extends BaseEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
     private String id;
 
-    @ManyToOne
-    @JoinColumn(name = "school_id", nullable = false)
-    private School school;
-
-    @ManyToOne
-    @JoinColumn(name = "academic_year_id", nullable = false)
-    private AcademicYear academicYear;
-
     @Column(unique = true, nullable = false)
-    private String classCode; // e.g. "10-A-2024"
+    private String teacherCode;
+
+    @OneToOne
+    @JoinColumn(name = "user_id", unique = true)
+    private User user;
 
     @Column(nullable = false)
-    private String grade;
+    private String firstName;
 
     @Column(nullable = false)
-    private String section;
+    private String lastName;
 
-    private String roomNumber;
+    private String phone;
 
-    private Integer capacity;
+    private String email;
 
-    @ManyToOne
-    @JoinColumn(name = "teacher_id")
-    private Teacher classTeacher;
+    private String subjectSpecialization;
+
+    private String photoUrl;
+
+    @Column(nullable = false)
+    private String status = "ACTIVE";
 }

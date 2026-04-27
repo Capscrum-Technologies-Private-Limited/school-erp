@@ -1,5 +1,6 @@
 package com.capscrum.school.erp.dataaccessor.model;
 
+import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -11,16 +12,22 @@ import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.Setter;
 
+import java.math.BigDecimal;
+import java.time.LocalDate;
+
 @Getter
 @Setter
 @Entity
 @EqualsAndHashCode(callSuper = false)
-@Table(name = "class_subjects")
-public class ClassSubject extends BaseEntity {
+@Table(name = "homework")
+public class Homework extends BaseEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
     private String id;
+
+    @Column(unique = true, nullable = false)
+    private String homeworkCode;
 
     @ManyToOne
     @JoinColumn(name = "class_id", nullable = false)
@@ -31,6 +38,23 @@ public class ClassSubject extends BaseEntity {
     private Subject subject;
 
     @ManyToOne
-    @JoinColumn(name = "teacher_id")
+    @JoinColumn(name = "teacher_id", nullable = false)
     private Teacher teacher;
+
+    @Column(nullable = false)
+    private String title;
+
+    @Column(columnDefinition = "TEXT")
+    private String description;
+
+    @Column(nullable = false)
+    private LocalDate dueDate;
+
+    @Column(precision = 6, scale = 2)
+    private BigDecimal maxMarks;
+
+    private String attachmentUrl;
+
+    @Column(nullable = false)
+    private String status = "ACTIVE"; // ACTIVE, CANCELLED
 }

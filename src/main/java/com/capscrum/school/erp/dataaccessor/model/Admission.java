@@ -33,6 +33,10 @@ public class Admission extends BaseEntity {
     @Column(unique = true, nullable = false)
     private String admissionCode;
 
+    @ManyToOne
+    @JoinColumn(name = "enquiry_id")
+    private AdmissionEnquiry enquiry;
+
     @Column(nullable = false)
     private String applicantName;
 

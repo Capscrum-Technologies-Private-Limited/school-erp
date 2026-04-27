@@ -117,6 +117,7 @@ public class NotificationServiceImpl extends AbstractCrudService<Notification, S
                                                     String recipientPhone) {
         // Determine channel
         String channel = determineChannel(recipientEmail, recipientPhone);
+        log.info("Preparing to send {} notification via {} for reference: {}", type, channel, referenceId);
 
         // Create notification
         Notification notification = new Notification();
@@ -145,11 +146,13 @@ public class NotificationServiceImpl extends AbstractCrudService<Notification, S
             recipient.setStatus("SENT");
             recipient.setSentAt(LocalDateTime.now());
             notification.setStatus("SENT");
+            log.info("Successfully sent notification (ID: {}) to {}", notification.getId(), recipientName);
         } else {
             recipient.setStatus("FAILED");
             recipient.setFailureReason("Failed to send via " + channel);
             notification.setStatus("FAILED");
             notification.setFailureReason("Delivery failed");
+            log.error("Failed to send notification (ID: {}) to {} via channel {}", notification.getId(), recipientName, channel);
         }
 
         recipientRepository.save(recipient);
