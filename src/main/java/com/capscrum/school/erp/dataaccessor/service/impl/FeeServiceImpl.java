@@ -1,5 +1,8 @@
 package com.capscrum.school.erp.dataaccessor.service.impl;
 
+import com.capscrum.school.erp.dataaccessor.constant.FeeStatus;
+import com.capscrum.school.erp.dataaccessor.constant.PaymentMethod;
+import com.capscrum.school.erp.dataaccessor.constant.PaymentStatus;
 import com.capscrum.school.erp.dataaccessor.aspect.LogPerformance;
 import com.capscrum.school.erp.dataaccessor.exception.BadRequestException;
 import com.capscrum.school.erp.dataaccessor.exception.ResourceNotFoundException;
@@ -45,21 +48,21 @@ public class FeeServiceImpl extends AbstractCrudService<Fee, String> implements 
     @Override
     @LogPerformance
     public List<Fee> getPendingFeesByStudentId(String studentId) {
-        return feeRepository.findByStudentIdAndStatus(studentId, "PENDING");
+        return feeRepository.findByStudentIdAndStatus(studentId, FeeStatus.PENDING.name());
     }
 
     @Override
     @Transactional
     @LogPerformance
-    public Fee recordPayment(String feeId, BigDecimal amount, String paymentMethod, String transactionId) {
+    public Fee recordPayment(String feeId, BigDecimal amount, PaymentMethod paymentMethod, String transactionId) {
         Fee fee = feeRepository.findById(feeId)
                 .orElseThrow(() -> new ResourceNotFoundException("Fee with id " + feeId + " not found"));
 
-        if ("PAID".equals(fee.getStatus())) {
+        if (FeeStatus.PAID.equals(fee.getStatus())) {
             throw new BadRequestException("Fee is already fully paid");
         }
 
-        if ("WAIVED".equals(fee.getStatus())) {
+        if (FeeStatus.WAIVED.equals(fee.getStatus())) {
             throw new BadRequestException("Fee has been waived and cannot accept payments");
         }
 
@@ -80,15 +83,15 @@ public class FeeServiceImpl extends AbstractCrudService<Fee, String> implements 
         payment.setPaymentMethod(paymentMethod);
         payment.setTransactionId(transactionId);
         payment.setReceiptNumber("RCP-" + System.currentTimeMillis());
-        payment.setStatus("SUCCESS");
+        payment.setStatus(PaymentStatus.SUCCESS);
         paymentRepository.save(payment);
 
         // Update fee
         fee.setAmountPaid(fee.getAmountPaid().add(amount));
         if (fee.getAmountPaid().compareTo(fee.getAmount()) >= 0) {
-            fee.setStatus("PAID");
+            fee.setStatus(FeeStatus.PAID);
         } else {
-            fee.setStatus("PARTIALLY_PAID");
+            fee.setStatus(FeeStatus.PARTIALLY_PAID);
         }
 
         return feeRepository.save(fee);
@@ -101,11 +104,11 @@ public class FeeServiceImpl extends AbstractCrudService<Fee, String> implements 
         Fee fee = feeRepository.findById(feeId)
                 .orElseThrow(() -> new ResourceNotFoundException("Fee with id " + feeId + " not found"));
 
-        if ("PAID".equals(fee.getStatus())) {
+        if (FeeStatus.PAID.equals(fee.getStatus())) {
             throw new BadRequestException("Cannot waive a fee that is already fully paid");
         }
 
-        fee.setStatus("WAIVED");
+        fee.setStatus(FeeStatus.WAIVED);
         return feeRepository.save(fee);
     }
 }

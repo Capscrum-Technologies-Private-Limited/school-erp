@@ -1,5 +1,6 @@
-package com.capscrum.school.erp.dataaccessor.Controller;
+package com.capscrum.school.erp.dataaccessor.controller;
 
+import com.capscrum.school.erp.dataaccessor.constant.PaymentMethod;
 import com.capscrum.school.erp.dataaccessor.model.Fee;
 import com.capscrum.school.erp.dataaccessor.service.FeeService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -48,7 +49,7 @@ public class FeeController extends AbstractCrudController<Fee, String> {
     public ResponseEntity<Fee> recordPayment(
             @PathVariable String feeId,
             @RequestParam BigDecimal amount,
-            @RequestParam String paymentMethod,
+            @RequestParam PaymentMethod paymentMethod,
             @RequestParam(required = false) String transactionId) {
         Fee updatedFee = feeService.recordPayment(feeId, amount, paymentMethod, transactionId);
         return ResponseEntity.ok(updatedFee);

@@ -1,7 +1,11 @@
 package com.capscrum.school.erp.dataaccessor.model;
 
+import com.capscrum.school.erp.dataaccessor.constant.Gender;
+import com.capscrum.school.erp.dataaccessor.constant.StudentStatus;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
@@ -28,6 +32,10 @@ public class Student extends BaseEntity {
     @JoinColumn(name = "school_id", nullable = false)
     private School school;
 
+    @ManyToOne
+    @JoinColumn(name = "class_id")
+    private SchoolClass schoolClass;
+
     @Column(unique = true, nullable = false)
     private String studentCode;
 
@@ -40,8 +48,9 @@ public class Student extends BaseEntity {
     @Column(nullable = false)
     private LocalDate dateOfBirth;
 
+    @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private String gender; // MALE, FEMALE, OTHER
+    private Gender gender; // MALE, FEMALE, OTHER
 
     private String bloodGroup;
     private String photoUrl;
@@ -49,6 +58,7 @@ public class Student extends BaseEntity {
     private String previousSchool;
     private String medicalNotes;
 
+    @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private String status = "ACTIVE"; // ACTIVE, INACTIVE, TRANSFERRED, GRADUATED
+    private StudentStatus status = StudentStatus.ACTIVE; // ACTIVE, INACTIVE, TRANSFERRED, GRADUATED
 }

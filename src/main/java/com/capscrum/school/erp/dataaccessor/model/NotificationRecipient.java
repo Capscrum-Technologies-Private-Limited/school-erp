@@ -1,7 +1,10 @@
 package com.capscrum.school.erp.dataaccessor.model;
 
+import com.capscrum.school.erp.dataaccessor.constant.NotificationStatus;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
@@ -36,8 +39,9 @@ public class NotificationRecipient extends BaseEntity {
 
     private String recipientPhone;
 
+    @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private String status = "PENDING"; // PENDING, SENT, FAILED
+    private NotificationStatus status = NotificationStatus.PENDING; // PENDING, SENT, FAILED
 
     private LocalDateTime sentAt;
 

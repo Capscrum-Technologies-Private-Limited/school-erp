@@ -1,7 +1,11 @@
 package com.capscrum.school.erp.dataaccessor.model;
 
+import com.capscrum.school.erp.dataaccessor.constant.AdmissionStatus;
+import com.capscrum.school.erp.dataaccessor.constant.Gender;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
@@ -43,8 +47,9 @@ public class Admission extends BaseEntity {
     @Column(nullable = false)
     private LocalDate dateOfBirth;
 
+    @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private String gender;
+    private Gender gender;
 
     @Column(nullable = false)
     private String gradeApplyingFor;
@@ -61,8 +66,9 @@ public class Admission extends BaseEntity {
 
     private String previousSchool;
 
+    @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private String status = "PENDING"; // PENDING, UNDER_REVIEW, APPROVED, REJECTED, WAITLISTED
+    private AdmissionStatus status = AdmissionStatus.PENDING; // PENDING, UNDER_REVIEW, APPROVED, REJECTED, WAITLISTED
 
     private String rejectionReason;
 

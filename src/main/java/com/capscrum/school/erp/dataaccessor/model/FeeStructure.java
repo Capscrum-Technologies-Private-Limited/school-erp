@@ -1,7 +1,10 @@
 package com.capscrum.school.erp.dataaccessor.model;
 
+import com.capscrum.school.erp.dataaccessor.constant.FeeFrequency;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
@@ -43,8 +46,9 @@ public class FeeStructure extends BaseEntity {
     @Column(nullable = false, precision = 10, scale = 2)
     private BigDecimal amount;
 
+    @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private String frequency; // MONTHLY, QUARTERLY, HALF_YEARLY, ANNUALLY, ONE_TIME
+    private FeeFrequency frequency; // MONTHLY, QUARTERLY, HALF_YEARLY, ANNUALLY, ONE_TIME
 
     private String applicableGrades; // comma-separated, e.g. "1,2,3" or "ALL"
 

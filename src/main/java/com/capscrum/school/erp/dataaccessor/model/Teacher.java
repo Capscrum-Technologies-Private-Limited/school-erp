@@ -1,7 +1,10 @@
 package com.capscrum.school.erp.dataaccessor.model;
 
+import com.capscrum.school.erp.dataaccessor.constant.StaffStatus;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
@@ -44,6 +47,7 @@ public class Teacher extends BaseEntity {
 
     private String photoUrl;
 
+    @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private String status = "ACTIVE";
+    private StaffStatus status = StaffStatus.ACTIVE;
 }

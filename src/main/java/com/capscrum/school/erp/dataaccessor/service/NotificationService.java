@@ -1,5 +1,6 @@
 package com.capscrum.school.erp.dataaccessor.service;
 
+import com.capscrum.school.erp.dataaccessor.constant.NotificationReferenceType;
 import com.capscrum.school.erp.dataaccessor.model.Notification;
 import com.capscrum.school.erp.dataaccessor.model.NotificationRecipient;
 
@@ -35,5 +36,5 @@ public interface NotificationService extends CrudService<Notification, String> {
     /**
      * Get notifications by reference (e.g. all notifications for an admission).
      */
-    List<Notification> getByReference(String referenceId, String referenceType);
+    List<Notification> getByReference(String referenceId, NotificationReferenceType referenceType);
 }

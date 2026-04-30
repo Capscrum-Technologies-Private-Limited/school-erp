@@ -1,7 +1,11 @@
 package com.capscrum.school.erp.dataaccessor.model;
 
+import com.capscrum.school.erp.dataaccessor.constant.AdmissionEnquirySource;
+import com.capscrum.school.erp.dataaccessor.constant.AdmissionEnquiryStatus;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
@@ -47,10 +51,12 @@ public class AdmissionEnquiry extends BaseEntity {
     @Column(nullable = false)
     private LocalDate enquiryDate = LocalDate.now();
 
-    private String source; // WALK_IN, ONLINE, REFERRAL
+    @Enumerated(EnumType.STRING)
+    private AdmissionEnquirySource source; // WALK_IN, ONLINE, REFERRAL
 
+    @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private String status = "NEW"; // NEW, CONTACTED, CONVERTED, DROPPED
+    private AdmissionEnquiryStatus status = AdmissionEnquiryStatus.NEW; // NEW, CONTACTED, CONVERTED, DROPPED
 
     @Column(columnDefinition = "TEXT")
     private String notes;

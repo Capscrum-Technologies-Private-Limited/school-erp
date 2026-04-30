@@ -1,5 +1,6 @@
-package com.capscrum.school.erp.dataaccessor.Controller;
+package com.capscrum.school.erp.dataaccessor.controller;
 
+import com.capscrum.school.erp.dataaccessor.constant.NotificationReferenceType;
 import com.capscrum.school.erp.dataaccessor.model.Notification;
 import com.capscrum.school.erp.dataaccessor.model.NotificationRecipient;
 import com.capscrum.school.erp.dataaccessor.service.NotificationService;
@@ -79,7 +80,7 @@ public class NotificationController extends AbstractCrudController<Notification,
     @GetMapping("/by-reference")
     public ResponseEntity<List<Notification>> getByReference(
             @RequestParam String referenceId,
-            @RequestParam String referenceType) {
+            @RequestParam NotificationReferenceType referenceType) {
         List<Notification> notifications = notificationService.getByReference(referenceId, referenceType);
         return ResponseEntity.ok(notifications);
     }

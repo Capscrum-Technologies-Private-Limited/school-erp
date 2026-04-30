@@ -1,7 +1,10 @@
 package com.capscrum.school.erp.dataaccessor.model;
 
+import com.capscrum.school.erp.dataaccessor.constant.NotificationMedium;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
@@ -30,8 +33,9 @@ public class NotificationTemplate extends BaseEntity {
     @Column(nullable = false, columnDefinition = "TEXT")
     private String bodyTemplate;
 
+    @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private String medium = "EMAIL"; // SMS, EMAIL, APP, ALL
+    private NotificationMedium medium = NotificationMedium.EMAIL; // SMS, EMAIL, APP, ALL
 
     @Column(nullable = false)
     private Boolean isActive = true;

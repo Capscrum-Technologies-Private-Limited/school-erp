@@ -1,4 +1,4 @@
-package com.capscrum.school.erp.dataaccessor.Controller;
+package com.capscrum.school.erp.dataaccessor.controller;
 
 import com.capscrum.school.erp.dataaccessor.model.Admission;
 import com.capscrum.school.erp.dataaccessor.service.AdmissionService;
@@ -13,7 +13,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@RequestMapping("/api/admissions")
+@RequestMapping("/capscrum/school-erp/admissions")
 public class AdmissionController extends AbstractCrudController<Admission, String> {
 
     public static final Logger log = LoggerFactory.getLogger(AdmissionController.class);

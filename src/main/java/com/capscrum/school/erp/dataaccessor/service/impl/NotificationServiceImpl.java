@@ -1,6 +1,10 @@
 package com.capscrum.school.erp.dataaccessor.service.impl;
 
 import com.capscrum.school.erp.dataaccessor.aspect.LogPerformance;
+import com.capscrum.school.erp.dataaccessor.constant.NotificationChannel;
+import com.capscrum.school.erp.dataaccessor.constant.NotificationReferenceType;
+import com.capscrum.school.erp.dataaccessor.constant.NotificationStatus;
+import com.capscrum.school.erp.dataaccessor.constant.NotificationType;
 import com.capscrum.school.erp.dataaccessor.model.Notification;
 import com.capscrum.school.erp.dataaccessor.model.NotificationRecipient;
 import com.capscrum.school.erp.dataaccessor.model.School;
@@ -57,8 +61,8 @@ public class NotificationServiceImpl extends AbstractCrudService<Notification, S
                 + "Best regards,\nSchool Administration",
                 recipientName, admissionId);
 
-        return createAndSendNotification("ADMISSION_APPROVED", subject, body,
-                admissionId, "ADMISSION", recipientName, recipientEmail, recipientPhone);
+        return createAndSendNotification(NotificationType.ADMISSION_APPROVED, subject, body,
+                admissionId, NotificationReferenceType.ADMISSION, recipientName, recipientEmail, recipientPhone);
     }
 
     @Override
@@ -75,8 +79,8 @@ public class NotificationServiceImpl extends AbstractCrudService<Notification, S
                 + "Best regards,\nSchool Administration",
                 recipientName, admissionId, rejectionReason);
 
-        return createAndSendNotification("ADMISSION_REJECTED", subject, body,
-                admissionId, "ADMISSION", recipientName, recipientEmail, recipientPhone);
+        return createAndSendNotification(NotificationType.ADMISSION_REJECTED, subject, body,
+                admissionId, NotificationReferenceType.ADMISSION, recipientName, recipientEmail, recipientPhone);
     }
 
     @Override
@@ -93,8 +97,8 @@ public class NotificationServiceImpl extends AbstractCrudService<Notification, S
                 + "Best regards,\nSchool Administration",
                 recipientName, paymentId, feeDetails, amountPaid);
 
-        return createAndSendNotification("FEE_PAYMENT_CONFIRMATION", subject, body,
-                paymentId, "PAYMENT", recipientName, recipientEmail, recipientPhone);
+        return createAndSendNotification(NotificationType.FEE_PAYMENT_CONFIRMATION, subject, body,
+                paymentId, NotificationReferenceType.PAYMENT, recipientName, recipientEmail, recipientPhone);
     }
 
     @Override
@@ -105,18 +109,18 @@ public class NotificationServiceImpl extends AbstractCrudService<Notification, S
 
     @Override
     @LogPerformance
-    public List<Notification> getByReference(String referenceId, String referenceType) {
-        return notificationRepository.findByReferenceIdAndReferenceType(referenceId, referenceType);
+    public List<Notification> getByReference(String referenceId, NotificationReferenceType referenceType) {
+        return notificationRepository.findByReferenceIdAndReferenceType(referenceId, referenceType.name());
     }
 
     // --- Private helpers ---
 
-    private Notification createAndSendNotification(String type, String subject, String body,
-                                                    String referenceId, String referenceType,
+    private Notification createAndSendNotification(NotificationType type, String subject, String body,
+                                                    String referenceId, NotificationReferenceType referenceType,
                                                     String recipientName, String recipientEmail,
                                                     String recipientPhone) {
         // Determine channel
-        String channel = determineChannel(recipientEmail, recipientPhone);
+        NotificationChannel channel = determineChannel(recipientEmail, recipientPhone);
         log.info("Preparing to send {} notification via {} for reference: {}", type, channel, referenceId);
 
         // Create notification
@@ -128,7 +132,7 @@ public class NotificationServiceImpl extends AbstractCrudService<Notification, S
         notification.setBody(body);
         notification.setReferenceId(referenceId);
         notification.setReferenceType(referenceType);
-        notification.setStatus("PENDING");
+        notification.setStatus(NotificationStatus.PENDING);
 
         notification = notificationRepository.save(notification);
 
@@ -138,19 +142,19 @@ public class NotificationServiceImpl extends AbstractCrudService<Notification, S
         recipient.setRecipientName(recipientName);
         recipient.setRecipientEmail(recipientEmail);
         recipient.setRecipientPhone(recipientPhone);
-        recipient.setStatus("PENDING");
+        recipient.setStatus(NotificationStatus.PENDING);
 
         boolean sent = dispatchNotification(channel, recipientEmail, recipientPhone, subject, body);
 
         if (sent) {
-            recipient.setStatus("SENT");
+            recipient.setStatus(NotificationStatus.SENT);
             recipient.setSentAt(LocalDateTime.now());
-            notification.setStatus("SENT");
+            notification.setStatus(NotificationStatus.SENT);
             log.info("Successfully sent notification (ID: {}) to {}", notification.getId(), recipientName);
         } else {
-            recipient.setStatus("FAILED");
+            recipient.setStatus(NotificationStatus.FAILED);
             recipient.setFailureReason("Failed to send via " + channel);
-            notification.setStatus("FAILED");
+            notification.setStatus(NotificationStatus.FAILED);
             notification.setFailureReason("Delivery failed");
             log.error("Failed to send notification (ID: {}) to {} via channel {}", notification.getId(), recipientName, channel);
         }
@@ -159,19 +163,19 @@ public class NotificationServiceImpl extends AbstractCrudService<Notification, S
         return notificationRepository.save(notification);
     }
 
-    private boolean dispatchNotification(String channel, String email, String phone,
+    private boolean dispatchNotification(NotificationChannel channel, String email, String phone,
                                           String subject, String body) {
         boolean emailSent = false;
         boolean smsSent = false;
 
-        if (("EMAIL".equals(channel) || "BOTH".equals(channel)) && email != null) {
+        if ((NotificationChannel.EMAIL.equals(channel) || NotificationChannel.BOTH.equals(channel)) && email != null) {
             MessageSender emailSender = sendersByChannel.get("EMAIL");
             if (emailSender != null) {
                 emailSent = emailSender.send(email, subject, body);
             }
         }
 
-        if (("SMS".equals(channel) || "BOTH".equals(channel)) && phone != null) {
+        if ((NotificationChannel.SMS.equals(channel) || NotificationChannel.BOTH.equals(channel)) && phone != null) {
             MessageSender smsSender = sendersByChannel.get("SMS");
             if (smsSender != null) {
                 smsSent = smsSender.send(phone, subject, body);
@@ -181,11 +185,11 @@ public class NotificationServiceImpl extends AbstractCrudService<Notification, S
         return emailSent || smsSent;
     }
 
-    private String determineChannel(String email, String phone) {
-        if (email != null && phone != null) return "BOTH";
-        if (email != null) return "EMAIL";
-        if (phone != null) return "SMS";
-        return "EMAIL"; // default
+    private NotificationChannel determineChannel(String email, String phone) {
+        if (email != null && phone != null) return NotificationChannel.BOTH;
+        if (email != null) return NotificationChannel.EMAIL;
+        if (phone != null) return NotificationChannel.SMS;
+        return NotificationChannel.EMAIL; // default
     }
 
     private School getDefaultSchool() {

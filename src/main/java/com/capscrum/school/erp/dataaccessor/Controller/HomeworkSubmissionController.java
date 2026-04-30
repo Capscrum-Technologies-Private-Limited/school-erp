@@ -1,4 +1,4 @@
-package com.capscrum.school.erp.dataaccessor.Controller;
+package com.capscrum.school.erp.dataaccessor.controller;
 
 import com.capscrum.school.erp.dataaccessor.model.HomeworkSubmission;
 import com.capscrum.school.erp.dataaccessor.service.HomeworkSubmissionService;

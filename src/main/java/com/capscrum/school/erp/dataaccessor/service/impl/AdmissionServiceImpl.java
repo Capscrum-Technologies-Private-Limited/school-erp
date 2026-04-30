@@ -1,5 +1,7 @@
 package com.capscrum.school.erp.dataaccessor.service.impl;
 
+import com.capscrum.school.erp.dataaccessor.constant.AdmissionStatus;
+import com.capscrum.school.erp.dataaccessor.constant.StudentStatus;
 import com.capscrum.school.erp.dataaccessor.aspect.LogPerformance;
 import com.capscrum.school.erp.dataaccessor.exception.BadRequestException;
 import com.capscrum.school.erp.dataaccessor.exception.ResourceNotFoundException;
@@ -44,7 +46,7 @@ public class AdmissionServiceImpl extends AbstractCrudService<Admission, String>
         Admission admission = admissionRepository.findById(admissionId)
                 .orElseThrow(() -> new ResourceNotFoundException("Admission with id " + admissionId + " not found"));
 
-        if (!"PENDING".equals(admission.getStatus()) && !"UNDER_REVIEW".equals(admission.getStatus())) {
+        if (!AdmissionStatus.PENDING.equals(admission.getStatus()) && !AdmissionStatus.UNDER_REVIEW.equals(admission.getStatus())) {
             throw new BadRequestException("Admission cannot be approved as it is in status: " + admission.getStatus());
         }
 
@@ -59,13 +61,13 @@ public class AdmissionServiceImpl extends AbstractCrudService<Admission, String>
         student.setDateOfBirth(admission.getDateOfBirth());
         student.setGender(admission.getGender());
         student.setPreviousSchool(admission.getPreviousSchool());
-        student.setStatus("ACTIVE");
+        student.setStatus(StudentStatus.ACTIVE);
         student.setCreatedBy(reviewedBy);
         student.setUpdatedBy(reviewedBy);
 
         Student savedStudent = studentRepository.save(student);
 
-        admission.setStatus("APPROVED");
+        admission.setStatus(AdmissionStatus.APPROVED);
         admission.setStudent(savedStudent);
         admission.setUpdatedBy(reviewedBy);
 
@@ -79,11 +81,11 @@ public class AdmissionServiceImpl extends AbstractCrudService<Admission, String>
          Admission admission = admissionRepository.findById(admissionId)
                 .orElseThrow(() -> new ResourceNotFoundException("Admission with id " + admissionId + " not found"));
 
-        if (!"PENDING".equals(admission.getStatus()) && !"UNDER_REVIEW".equals(admission.getStatus())) {
+        if (!AdmissionStatus.PENDING.equals(admission.getStatus()) && !AdmissionStatus.UNDER_REVIEW.equals(admission.getStatus())) {
             throw new BadRequestException("Admission cannot be rejected as it is in status: " + admission.getStatus());
         }
 
-        admission.setStatus("REJECTED");
+        admission.setStatus(AdmissionStatus.REJECTED);
         admission.setRejectionReason(reason);
         admission.setUpdatedBy(reviewedBy);
 

@@ -10,5 +10,5 @@ import java.util.List;
 public interface FeeStructureRepository extends JpaRepository<FeeStructure, String> {
     List<FeeStructure> findBySchoolIdAndAcademicYearId(String schoolId, String academicYearId);
     List<FeeStructure> findBySchoolIdAndIsActiveTrue(String schoolId);
-    List<FeeStructure> findByAcademicYearIdAndFeeCategory(String academicYearId, String feeCategory);
+    List<FeeStructure> findByAcademicYearIdAndFeeCategoryId(String academicYearId, String feeCategoryId);
 }

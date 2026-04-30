@@ -1,7 +1,10 @@
 package com.capscrum.school.erp.dataaccessor.model;
 
+import com.capscrum.school.erp.dataaccessor.constant.AttendanceStatus;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
@@ -43,8 +46,9 @@ public class Attendance extends BaseEntity {
     @Column(nullable = false)
     private LocalDate date;
 
+    @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private String status; // PRESENT, ABSENT, LATE, EXCUSED
+    private AttendanceStatus status; // PRESENT, ABSENT, LATE, EXCUSED
 
     private String remarks;
 }

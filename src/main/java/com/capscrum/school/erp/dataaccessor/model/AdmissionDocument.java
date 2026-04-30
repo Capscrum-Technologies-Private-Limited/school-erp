@@ -1,7 +1,10 @@
 package com.capscrum.school.erp.dataaccessor.model;
 
+import com.capscrum.school.erp.dataaccessor.constant.AdmissionDocumentType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
@@ -29,8 +32,9 @@ public class AdmissionDocument extends BaseEntity {
     @JoinColumn(name = "admission_id", nullable = false)
     private Admission admission;
 
+    @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private String documentType; // BIRTH_CERT, TRANSFER_CERT, PHOTO, ID_PROOF
+    private AdmissionDocumentType documentType; // BIRTH_CERT, TRANSFER_CERT, PHOTO, ID_PROOF
 
     @Column(nullable = false)
     private String fileUrl;
