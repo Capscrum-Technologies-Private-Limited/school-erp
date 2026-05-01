@@ -7,19 +7,22 @@ import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.stereotype.Component;
 
-@Component
+//@Component
 public class EmailMessageSender implements MessageSender {
 
     private static final Logger log = LoggerFactory.getLogger(EmailMessageSender.class);
 
-    private final JavaMailSender mailSender;
+    // private final JavaMailSender mailSender;
 
-    public EmailMessageSender(JavaMailSender mailSender) {
-        this.mailSender = mailSender;
+    public EmailMessageSender(/*JavaMailSender mailSender*/) {
+        // this.mailSender = mailSender;
     }
 
     @Override
     public boolean send(String to, String subject, String body) {
+        log.info("[SIMULATED] Email would be sent to {} with subject: {}", to, subject);
+        return true;
+        /*
         try {
             SimpleMailMessage message = new SimpleMailMessage();
             message.setTo(to);
@@ -32,6 +35,7 @@ public class EmailMessageSender implements MessageSender {
             log.error("Failed to send email to {}: {}", to, e.getMessage());
             return false;
         }
+        */
     }
 
     @Override
