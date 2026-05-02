@@ -56,16 +56,10 @@ public class DataSeeder implements CommandLineRunner {
     @Override
     @Transactional
     public void run(String... args) {
-        boolean isFirstRun = roleRepository.count() == 0;
-        
-        if (!isFirstRun && userRepository.count() > 1) {
-            log.info("Database already seeded — skipping DataSeeder");
-            return;
-        }
+        log.info("=== Checking Auth & RBAC Data ===");
 
-        log.info("=== Seeding Auth & RBAC Data ===");
-
-        if (isFirstRun) {
+        if (roleRepository.count() == 0) {
+            log.info("No roles found. Seeding Permissions and Roles...");
             // 1. Create permissions per module
             Map<String, Permission> permissionMap = seedPermissions();
 
@@ -79,7 +73,7 @@ public class DataSeeder implements CommandLineRunner {
         // 4. Create sample users for each role
         seedSampleUsers();
 
-        log.info("=== Data seeding complete ===");
+        log.info("=== Auth & RBAC initialization complete ===");
     }
 
     private Map<String, Permission> seedPermissions() {
