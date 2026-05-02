@@ -1,11 +1,9 @@
 package com.capscrum.school.erp.dataaccessor.config;
 
-import com.capscrum.school.erp.dataaccessor.model.Permission;
-import com.capscrum.school.erp.dataaccessor.model.Role;
-import com.capscrum.school.erp.dataaccessor.model.User;
-import com.capscrum.school.erp.dataaccessor.repository.PermissionRepository;
-import com.capscrum.school.erp.dataaccessor.repository.RoleRepository;
-import com.capscrum.school.erp.dataaccessor.repository.UserRepository;
+import com.capscrum.school.erp.dataaccessor.constant.Gender;
+import com.capscrum.school.erp.dataaccessor.constant.ParentRelation;
+import com.capscrum.school.erp.dataaccessor.model.*;
+import com.capscrum.school.erp.dataaccessor.repository.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.CommandLineRunner;
@@ -13,6 +11,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -31,35 +30,54 @@ public class DataSeeder implements CommandLineRunner {
     private final PermissionRepository permissionRepository;
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
+    private final SchoolRepository schoolRepository;
+    private final TeacherRepository teacherRepository;
+    private final StudentRepository studentRepository;
+    private final ParentRepository parentRepository;
 
     public DataSeeder(RoleRepository roleRepository,
                       PermissionRepository permissionRepository,
                       UserRepository userRepository,
-                      PasswordEncoder passwordEncoder) {
+                      PasswordEncoder passwordEncoder,
+                      SchoolRepository schoolRepository,
+                      TeacherRepository teacherRepository,
+                      StudentRepository studentRepository,
+                      ParentRepository parentRepository) {
         this.roleRepository = roleRepository;
         this.permissionRepository = permissionRepository;
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
+        this.schoolRepository = schoolRepository;
+        this.teacherRepository = teacherRepository;
+        this.studentRepository = studentRepository;
+        this.parentRepository = parentRepository;
     }
 
     @Override
     @Transactional
     public void run(String... args) {
-        if (roleRepository.count() > 0) {
+        boolean isFirstRun = roleRepository.count() == 0;
+        
+        if (!isFirstRun && userRepository.count() > 1) {
             log.info("Database already seeded — skipping DataSeeder");
             return;
         }
 
         log.info("=== Seeding Auth & RBAC Data ===");
 
-        // 1. Create permissions per module
-        Map<String, Permission> permissionMap = seedPermissions();
+        if (isFirstRun) {
+            // 1. Create permissions per module
+            Map<String, Permission> permissionMap = seedPermissions();
 
-        // 2. Create roles with permission mappings (from entity design doc)
-        seedRoles(permissionMap);
+            // 2. Create roles with permission mappings (from entity design doc)
+            seedRoles(permissionMap);
+        }
 
         // 3. Create default super admin user
         seedSuperAdmin();
+
+        // 4. Create sample users for each role
+        seedSampleUsers();
 
         log.info("=== Data seeding complete ===");
     }
@@ -218,5 +236,82 @@ public class DataSeeder implements CommandLineRunner {
         userRepository.save(admin);
         log.info("Created default super admin user: admin / admin@school.erp / Admin@123");
         log.warn("⚠ Change the default admin password immediately in production!");
+    }
+
+    private void seedSampleUsers() {
+        // 0. Ensure a default school exists
+        School defaultSchool = schoolRepository.findBySchoolCode("SCH001")
+                .orElseGet(() -> {
+                    School s = new School();
+                    s.setSchoolCode("SCH001");
+                    s.setName("Global International School");
+                    s.setAddress("123 Tech Park, Bangalore");
+                    s.setPhone("080-1234567");
+                    s.setEmail("info@globalintl.edu");
+                    return schoolRepository.save(s);
+                });
+
+        String[][] sampleUsers = {
+                {"school_admin", "school.admin@school.erp", "ADMIN", "School Administrator"},
+                {"finance_user", "finance@school.erp", "FINANCE_MANAGER", "Finance Manager"},
+                {"clerk_user", "clerk@school.erp", "CLERK", "Office Clerk"},
+                {"teacher_user", "teacher@school.erp", "TEACHER", "John Teacher"},
+                {"librarian_user", "librarian@school.erp", "LIBRARIAN", "Book Librarian"},
+                {"parent_user", "parent@school.erp", "PARENT", "Parent User"},
+                {"student_user", "student@school.erp", "STUDENT", "Student User"}
+        };
+
+        for (String[] userData : sampleUsers) {
+            if (!userRepository.existsByUsername(userData[0])) {
+                User user = new User();
+                user.setUsername(userData[0]);
+                user.setEmail(userData[1]);
+                user.setPassword(passwordEncoder.encode("Password@123"));
+                user.setFullName(userData[3]);
+                user.setEnabled(true);
+
+                Role role = roleRepository.findByName(userData[2])
+                        .orElseThrow(() -> new RuntimeException("Role " + userData[2] + " not found"));
+                user.setRoles(Set.of(role));
+
+                User savedUser = userRepository.save(user);
+                log.debug("Created user record for: {}", userData[0]);
+
+                // Link to profile entities
+                if (userData[2].equals("TEACHER")) {
+                    Teacher t = new Teacher();
+                    t.setTeacherCode("T001");
+                    t.setFirstName("John");
+                    t.setLastName("Teacher");
+                    t.setUser(savedUser);
+                    t.setEmail(savedUser.getEmail());
+                    teacherRepository.save(t);
+                    log.info("Linked user '{}' to Teacher profile", userData[0]);
+                } else if (userData[2].equals("STUDENT")) {
+                    Student s = new Student();
+                    s.setStudentCode("S001");
+                    s.setFirstName("Student");
+                    s.setLastName("User");
+                    s.setDateOfBirth(LocalDate.of(2010, 1, 1));
+                    s.setGender(Gender.MALE);
+                    s.setSchool(defaultSchool);
+                    s.setUser(savedUser);
+                    studentRepository.save(s);
+                    log.info("Linked user '{}' to Student profile", userData[0]);
+                } else if (userData[2].equals("PARENT")) {
+                    Parent p = new Parent();
+                    p.setFirstName("Parent");
+                    p.setLastName("User");
+                    p.setEmail(savedUser.getEmail());
+                    p.setPhoneNumber("9876543210");
+                    p.setRelation(ParentRelation.FATHER);
+                    p.setSchool(defaultSchool);
+                    p.setUser(savedUser);
+                    parentRepository.save(p);
+                    log.info("Linked user '{}' to Parent profile", userData[0]);
+                }
+            }
+        }
+        log.info("Seeded sample users for all roles (Password: Password@123)");
     }
 }
