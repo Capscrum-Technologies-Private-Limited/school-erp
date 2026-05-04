@@ -1,0 +1,14 @@
+{
+  "name": "school-erp-monorepo",
+  "private": true,
+  "description": "School ERP System - Separated Frontend and Backend",
+  "scripts": {
+    "frontend:install": "npm install --prefix frontend",
+    "frontend:dev": "npm run dev --prefix frontend",
+    "frontend:build": "npm run build --prefix frontend",
+    "dev": "npm run frontend:dev"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC"
+}
