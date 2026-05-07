@@ -6,10 +6,12 @@ import org.springframework.stereotype.Repository;
 
 import java.util.List;
 
+import com.capscrum.school.erp.dataaccessor.constant.FeeStatus;
+
 @Repository
 public interface FeeRepository extends JpaRepository<Fee, String> {
     List<Fee> findByStudentId(String studentId);
-    List<Fee> findByStudentIdAndStatus(String studentId, String status);
+    List<Fee> findByStudentIdAndStatus(String studentId, FeeStatus status);
     List<Fee> findByFeeStructureId(String feeStructureId);
-    List<Fee> findByStatus(String status);
+    List<Fee> findByStatus(FeeStatus status);
 }

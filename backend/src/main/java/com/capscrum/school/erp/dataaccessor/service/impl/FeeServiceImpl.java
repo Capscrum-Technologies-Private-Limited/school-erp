@@ -48,7 +48,7 @@ public class FeeServiceImpl extends AbstractCrudService<Fee, String> implements 
     @Override
     @LogPerformance
     public List<Fee> getPendingFeesByStudentId(String studentId) {
-        return feeRepository.findByStudentIdAndStatus(studentId, FeeStatus.PENDING.name());
+        return feeRepository.findByStudentIdAndStatus(studentId, FeeStatus.PENDING);
     }
 
     @Override

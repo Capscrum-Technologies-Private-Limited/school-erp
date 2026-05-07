@@ -71,7 +71,7 @@ public class DataSeeder implements CommandLineRunner {
         seedSuperAdmin();
 
         // 4. Create sample users for each role
-        seedSampleUsers();
+        // seedSampleUsers(); // Removed for production
 
         log.info("=== Auth & RBAC initialization complete ===");
     }
