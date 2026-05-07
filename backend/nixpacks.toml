@@ -1,0 +1,8 @@
+[phases.setup]
+nixPkgs = ["jdk17", "maven"]
+
+[phases.build]
+cmds = ["mvn clean package -DskipTests -Pproduction"]
+
+[start]
+cmd = "java -Xms256m -Xmx384m -jar target/app.jar"

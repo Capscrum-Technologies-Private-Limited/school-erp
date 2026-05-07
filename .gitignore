@@ -3,6 +3,10 @@
 *.log
 temp_extract.txt
 school_erp_entity_design.docx
+hs_err_pid*
+*.backup
+*_backup
+*_backup.*
 
 # Backend
 backend/target/
